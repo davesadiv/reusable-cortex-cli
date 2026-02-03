@@ -18,6 +18,7 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     # Map the secrets to environment variables for the whole job
+    environment: Cortex
     env:
       CORTEX_API_KEY: ${{ secrets.CORTEX_API_KEY }}
       CORTEX_API_KEY_ID: ${{ secrets.CORTEX_API_KEY_ID }}
