@@ -17,6 +17,7 @@ on:
 jobs:
   scan:
     runs-on: ubuntu-latest
+    environment: Cortex
     steps:
       - name: Checkout Caller Repo
         uses: actions/checkout@v4
