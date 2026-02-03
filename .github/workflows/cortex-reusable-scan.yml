@@ -21,37 +21,26 @@ on:
 jobs:
   scan:
     runs-on: ubuntu-latest
+    # Map secrets to env variables so they are available to all 'run' steps
+    env:
+      CORTEX_API_KEY: ${{ secrets.CORTEX_API_KEY }}
+      CORTEX_API_KEY_ID: ${{ secrets.CORTEX_API_KEY_ID }}
+      CORTEX_API_URL: ${{ secrets.CORTEX_API_URL }}
+    
     steps:
-      - name: Checkout Caller Repo
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Sanity Check Secrets
-        run: |
-          echo "Verifying secrets are received from caller..."
-          MISSING=0
-          if [ -z "${{ secrets.CORTEX_API_URL }}" ]; then echo "❌ CORTEX_API_URL is EMPTY"; MISSING=1; fi
-          if [ -z "${{ secrets.CORTEX_API_KEY }}" ]; then echo "❌ CORTEX_API_KEY is EMPTY"; MISSING=1; fi
-          if [ -z "${{ secrets.CORTEX_API_KEY_ID }}" ]; then echo "❌ CORTEX_API_KEY_ID is EMPTY"; MISSING=1; fi
-          if [ "$MISSING" -eq 1 ]; then 
-            echo "Error: Required secrets are not set in the caller repository."
-            exit 1 
-          fi
-          echo "✅ All secrets present."
-
-      - name: Download cortexcli
-        run: |
-          crtx_resp=$(curl -s -H "x-xdr-auth-id: ${{ secrets.CORTEX_API_KEY_ID }}" -H "Authorization: ${{ secrets.CORTEX_API_KEY }}" "${{ secrets.CORTEX_API_URL }}/public_api/v1/unified-cli/releases/download-link?os=linux&architecture=amd64")
-          crtx_url=$(echo "$crtx_resp" | jq -r ".signed_url")
-          
-          if [ "$crtx_url" == "null" ] || [ -z "$crtx_url" ]; then
-            echo "❌ Failed to get download link. Check API URL and Keys."
-            exit 1
-          fi
-          
-          curl -s -o cortexcli "$crtx_url"
-          chmod +x cortexcli
+      # ... (Download step) ...
 
       - name: Run Cortex Code Scan
         run: |
           ./cortexcli code scan \
-            --api-base
+            --api-base-url "$CORTEX_API_URL" \
+            --api-key "$CORTEX_API_KEY" \
+            --api-key-id "$CORTEX_API_KEY_ID" \
+            --directory "${{ github.workspace }}" \
+            --repo-id "${{ github.repository }}" \
+            --branch "${{ github.ref_name }}" \
+            --source "GITHUB_ACTIONS" \
+            --create-repo-if-missing
